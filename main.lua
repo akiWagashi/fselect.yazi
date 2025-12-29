@@ -3,7 +3,7 @@ local root = ya.sync(function() return cx.active.current.cwd end)
 local function entry()
     local rules, event = ya.input{
         title = "Filter by fselect",
-        position = { "center", w = 50 },
+        pos = { "center", w = 50 },
     }
 
     if event ~= 1 or rules == nil or rules == "" then return end
