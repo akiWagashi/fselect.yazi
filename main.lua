@@ -8,30 +8,29 @@ local function entry()
 
     if event ~= 1 or rules == nil or rules == "" then return end
 
-    local cwd = root()
+    local root = root()
 
-    local cmd = Command("fselect"):arg{ "name", "where", rules }:cwd(tostring(cwd))
-
-    local output, err = cmd:output()
+    local output, err = Command("fselect"):arg{ "name", "where", rules }:cwd(tostring(root)):output()
 
     local id = ya.id("ft")
-    local virtual_dir = cwd:into_search(rules .. " by fselect")
-    ya.emit("cd", { Url(virtual_dir) })
+    local cwd = root:into_search(rules .. "by fselect")
+    
+    ya.emit("cd", { Url(cwd) })
     ya.emit("update_files", {
-        op = fs.op("part", {id = id, url = Url(virtual_dir), files = {} })
+        op = fs.op("part", {id = id, url = Url(cwd), files = {} })
     })
 
     local files = {}
 	for path in output.stdout:gmatch("[^\r\n]+") do
-        local url = virtual_dir:join(path)
+        local url = cwd:join(path)
         local cha = fs.cha(url, true)
         if cha then
         	files[#files + 1] = File { url = url, cha = cha }
         end
 	end
 
-	ya.emit("update_files", {op = fs.op("part", { id = id, url = Url(virtual_dir), files = files })})
-	ya.emit("update_files", {op = fs.op("done", { id = id, url = virtual_dir, cha = Cha { kind = 16 }})})
+	ya.emit("update_files", {op = fs.op("part", { id = id, url = Url(cwd), files = files }) })
+	ya.emit("update_files", {op = fs.op("done", { id = id, url = cwd, cha = Cha { mode = tonumber("100644", 8) } }) })
 
 end
 
