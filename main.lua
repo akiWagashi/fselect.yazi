@@ -1,9 +1,11 @@
 local root = ya.sync(function() return cx.active.current.cwd end)
 
+local function fail(content) return ya.notify { title = "fselect Filter", content = content, timeout = 5, level = "error" } end
+
 local function entry()
     local rules, event = ya.input{
         title = "Filter by fselect",
-        pos = { "center", w = 50 },
+        pos = { "top-center", y = 3, w = 50, h = 2 },
     }
 
     if event ~= 1 or rules == nil or rules == "" then return end
@@ -12,10 +14,24 @@ local function entry()
 
     local output, err = Command("fselect"):arg{ "name", "where", rules }:cwd(tostring(root)):output()
 
+    if err then
+		return fail("Failed to run `fselect`, error: " .. err)
+	elseif not output.status.success then
+		return fail("Failed to run `fselect`, stderr: " .. output.stderr)
+	end
+
+    local search_path = ""
+    local via_text = " by fselect"
+    if rules:len() > 30 then
+        search_path = rules:sub(1, 20) .. "..." .. via_text
+    else
+        search_path = rules .. via_text
+    end
+
+    local cwd = root:into_search(search_path)
     local id = ya.id("ft")
-    local cwd = root:into_search(rules .. "by fselect")
-    
-    ya.emit("cd", { Url(cwd) })
+
+    ya.emit("cd", { Url(cwd), source = "search"})
     ya.emit("update_files", {
         op = fs.op("part", {id = id, url = Url(cwd), files = {} })
     })
